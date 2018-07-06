@@ -1,0 +1,26 @@
+{
+  "name": "dxcluster",
+  "version": "0.0.1",
+  "description": "A utility for listening to a DXCluster server and emit events when spots are sent out",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kecramer/dxcluster.git"
+  },
+  "keywords": [
+    "amateurradio",
+    "radio",
+    "dxcluster",
+    "dxspot",
+    "K3AM"
+  ],
+  "author": "Kevin Cramer <kcramer@gmail.com> (https://github.com/kecramer)",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/kecramer/dxcluster/issues"
+  },
+  "homepage": "https://github.com/kecramer/dxcluster#readme"
+}
