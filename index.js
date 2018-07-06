@@ -2,11 +2,11 @@ const net = require('net')
 const events = require('events')
 
 module.exports = class DXCluster extends events.EventEmitter {
-  constructor(call = null, socket = null) {
-    super();
+  constructor(opts = {}) {
+    super()
 
-    this.socket = socket
-    this.call = call
+    this.socket = opts.socket || null
+    this.call = opts.call || null
     this.status = {
       connected: false,
       awaiting_login: false,
@@ -16,71 +16,82 @@ module.exports = class DXCluster extends events.EventEmitter {
       frequency: /[0-9]{1,5}\.[0-9]{1,3}/g,
       time: /[0-9]{4}Z/g
     }
-    this.ct = '\n'
+    this.ct = opts.ct || '\n'
+    this.dxId = opts.dxId || 'DX de'
   }
 
-  setCallsign(call) {
-    this.call = call;
-  }
-
-  connect(host, port) {
+  connect(opts = {}) {
     return new Promise((resolve, reject) => {
-      if(!this.call) {
+      let call = opts.call || this.call
+      if(!call) {
         reject('You must specify a callsign')
         return;
       }
 
-      this.host = host;
-      this.port = port;
+      this.host = opts.host || '127.0.0.1'
+      this.port = opts.port || 23
 
       this.socket = net.createConnection({
-        port: this.port || 7300,
-        host: this.host || 'w6cua.no-ip.org'
+        host: this.host || 'w6cua.no-ip.org',
+        port: this.port || 7300
       }, () => {
         this.status.connected = this.status.awaiting_login = true
         resolve(this.socket);
       })
 
+      let loginPrompt = opts.loginPrompt || 'Please enter your call:'
+
       this.socket.on('data', (data) => {
         if(this.status.awaiting_login) {
-          if(data.toString('utf8').indexOf('Please enter your call:') != -1) {
-            if(this.socket.write(this.call + this.ct)) {
+          if(data.toString('utf8').indexOf(loginPrompt) != -1) {
+            if(this.write(call)) {
               this.status.awaiting_login = false
             }
           }
         }
         this._parseDX(data.toString('utf8'))
       })
+
+      this.socket.on('close', (err) => {
+        this.status.connected = this.status.awaiting_login = false;
+        this.emit('close');
+      })
+
+      this.socket.on('timeout', () => {
+        this.emit('timeout')
+      })
     })
   }
 
   close() {
     this.status.connected = this.status.awaiting_login = false;
-    this.socket = this.socket.end();
+    this.socket = this.socket.end()
     this.emit('closed')
   }
 
-  destory() {
+  destroy() {
     this.status.connected = this.status.awaiting_login = false;
-    this.socket = this.socket.destroy();
+    this.socket = this.socket.destroy()
     this.emit('destroyed')
   }
 
   write(str) {
-    this.socket.write(str + this.ct);
+    return this.socket.write(str + this.ct)
   }
 
   _parseDX(dxString) {
     let dxSpot = { }
-    if(dxString.indexOf('DX de') == 0) {
-      let callsigns = dxString.match(this.regex.callsign);
-      if(callsigns.length < 2) {
-        console.log(dxString);
+    if(dxString.indexOf(this.dxId) == 0) {
+      let callsigns = dxString.match(this.regex.callsign)
+      let frequency = parseFloat(dxString.match(this.regex.frequency)[0])
+      if(callsigns.length < 2 || !frequency) {
+        this.emit('parseerror', dxString)
+        return;
       }
       dxSpot = {
         spotter: callsigns[0],
         spotted: callsigns[1],
-        frequency: parseFloat(dxString.match(this.regex.frequency)[0]),
+        frequency,
         message: dxString.substring(
                     /*start*/ dxString.indexOf(callsigns[1]) + callsigns[1].length,
                     /* end */ dxString.search(this.regex.time))
@@ -88,6 +99,8 @@ module.exports = class DXCluster extends events.EventEmitter {
         when: new Date()
       }
       this.emit('spot', dxSpot)
+    } else {
+      this.emit('message', dxString)
     }
   }
 }

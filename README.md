@@ -13,9 +13,16 @@ This is my first NPM package, and I'm relatively new to Javascript. As I learn, 
 
 If you have never logged into a specific DXCluster before, you should do that in an  interactive telnet session first. The `write` method is provided such that a user could authenticate the first time themselves, but it will be easier to do in a shell. This package listens for `Please enter your call:` before providing your callsign for authentication.
 
-    conn = new DXCluster('K3AM')
+    conn = new DXCluster()
 
-    conn.connect('w6cua.no-ip.org', 7300)
+    let opts = {
+      host: 'dxusa.net',
+      port: 7300,
+      loginPrompt: 'login:',
+      call: 'K3AM'
+    }
+
+    conn.connect(opts)
       .then(() => {
         console.log('connected')
       })
