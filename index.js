@@ -13,7 +13,7 @@ module.exports = class DXCluster extends events.EventEmitter {
     }
     this.regex = {
       callsign: /[0-9]?[A-Z]{1,2}[0-9]{1,3}[A-Z]{1,4}/g,
-      frequency: /[0-9]{1,5}\.[0-9]{1,3}/g,
+      frequency: /[0-9]{1,8}\.[0-9]{1,3}/g,
       time: /[0-9]{4}Z/g
     }
     this.ct = opts.ct || '\n'
